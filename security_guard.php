@@ -1,13 +1,13 @@
 <?php
-
+#echo "hai";
 include "connect.php";
 header('Access-Control-Allow-Origin:*');
 header("Content-Type: application/json");
 $method = $_SERVER['REQUEST_METHOD'];
 date_default_timezone_set('Asia/Kolkata');
-#echo $method;
 $data = json_decode(file_get_contents('php://input'), true);
 $key = "allow_me";
+
 switch ($method) {
     case 'GET': {
         if (!$conn) {
@@ -15,22 +15,20 @@ switch ($method) {
 
         } else {
             $phone = $_GET['phone_number'];
-           $sql = "SELECT * FROM `securityguard` where block_name in (SELECT block_name from users WHERE  phone = '$phone')";
+            $sql = "SELECT * FROM `securityguard` where block_name in (SELECT community_name from users WHERE  phone = '$phone')";
             $result = mysqli_query($conn, $sql);
 
             if ($result->num_rows > 0) {
                 while ($row = $result->fetch_assoc()) {
                     $tblusers[] = $row;
                 }
+               // echo http_response_code(200);
                 // echo   $shifts = $tblusers['shift'];
                 echo json_encode($tblusers);
             } else {
                 echo http_response_code(404);
                 echo json_encode(array("message" => "Data is not availble"));
             }
-            //    print_r($tblusers);
-
-
         }
 
         break;
@@ -43,67 +41,84 @@ switch ($method) {
             // $data = json_decode(file_get_contents("php://input"));
             //  echo gettype($data);
 
-
+            echo "data is here";
+            #echo "active". $active = (count($_POST) > 0) ? $_POST['active'] : $data['active'];
             if (isset($_POST)) {
-                
+
                 $name = (count($_POST) > 0) ? $_POST['name'] : $data['name'];
                 $age = (count($_POST) > 0) ? $_POST['age'] : $data['age'];
                 $address = (count($_POST) > 0) ? $_POST['address'] : $data['address'];
                 $block_name = (count($_POST) > 0) ? $_POST['block_name'] : $data['block_name'];
                 $service_start_date = (count($_POST) > 0) ? $_POST['service_start_date'] : $data['service_starting_date'];
                 $service_end_date = (count($_POST) > 0) ? $_POST['service_end_date'] : $data['service_ending_date'];
-                $active = (count($_POST) > 0) ? $_POST['active'] : $data['active'];
+                "active" . $active = (count($_POST) > 0) ? $_POST['active'] : $data['active'];
                 $ashift = (count($_POST) > 0) ? $_POST['shiftA'] : $data['shiftA'];
                 $bshift = (count($_POST) > 0) ? $_POST['shiftB'] : $data['shiftB'];
                 $cshift = (count($_POST) > 0) ? $_POST['shiftC'] : $data['shiftC'];
                 $phone = (count($_POST) > 0) ? $_POST['mobileNumber'] : $data['mobileNumber'];
                 $alternate_phone = (count($_POST) > 0) ? $_POST['alternate_phone_number'] : $data['alternate_phone_number'];
-                $role= "Security";
-                $created_by = "super_admin";
+                $role = "Security";
+                $created_by = "Security";
                 $created_date = date('Y-m-d H:i:s');
-                $updated_by = "super_admin";
+                $updated_by = "Security";
                 $updated_date = date('Y-m-d H:i:s');
                 $security_guard_id = "AM" . strtoupper(substr($role, 0, 1)) . "" . strtoupper(substr($block_name, 0, 1)) . rand(1, 10000);
                 $shift = array();
                 array_push($shift, $ashift);
                 array_push($shift, $bshift);
                 array_push($shift, $cshift);
-                $shifts = implode(',', $shift);
+               echo "here". $shifts = implode(',', $shift);
 
-                $shifts = str_replace(',', ' ', $shifts);
+               echo $shifts = str_replace(',', ' ', $shifts);
                 print_r(json_encode($shifts));
 
-                $pswd = generatePassword();
+                $pswd = "welcome";
                 $iv = random_bytes(16);
                 $encrypted = openssl_encrypt($pswd, 'aes-256-cbc', $key, 0, $iv);
                 $hashed_password = base64_encode($encrypted . '::' . $iv);
-    
-   # echo "data reached to here";
 
-echo $security_guard_id."      ".$name."    ".$age."    ".$address."    ".$service_start_date."         ".$service_end_date."   ".$active." ".$shifts."     ".$phone."      ".$alternate_phone;
+                $active = $active == "active" ? 1 : 0;
 
-                if (
+                echo $security_guard_id."   ".$name."  ".$age."  ".$address."  ".$service_start_date." ".$service_end_date." ".$active."  ".$shifts."  ".$phone. "  ".$alternate_phone;
+
+            if (
                     !empty($security_guard_id) && !empty($name) && !empty($age) && !empty($address) && !empty($service_start_date)
                     && !empty($service_end_date) && !empty($active) && !empty($shifts) && !empty($phone) && !empty($alternate_phone)
                 ) {
                     echo "data in if condition";
+                    if(mysqli_num_rows(mysqli_query($conn,"select *from `securityguard` where phone=".$phone))==0){
+                    if($shifts=="  ")
+                    {
+                        http_response_code(406);
+                    }else{
                     // SQL query to insert data into the database
-                    $query = "INSERT INTO `securityguard` (`security_guard_id`,`name`,`block_name`,`age`,`address`, `service_start_date`, `service_end_date`,`active`,`shift`,`phone`,`alternate_phone`,`created_by`,`created_date`,`updated_by`,`updated_date`)
+                   echo $query = "INSERT INTO `securityguard` (`security_guard_id`,`name`,`block_name`,`age`,`address`, `service_start_date`, `service_end_date`,`active`,`shift`,`phone`,`alternate_phone`,`created_by`,`created_date`,`updated_by`,`updated_date`)
                                                 VALUES ('$security_guard_id','$name','$block_name','$age','$address', '$service_start_date', '$service_end_date','$active', '$shifts','$phone','$alternate_phone', '$created_by', '$created_date', '$updated_by', '$updated_date')";
 
-                  //  echo $query;
+                    //  echo $query;
                     $query2 = "INSERT INTO users values('$security_guard_id','$role','$name','$block_name','$phone','$alternate_phone','$hashed_password','$pswd',1,'$encrypted','$created_by,', '$created_date', '$updated_by', '$updated_date')";
-                    if (mysqli_query($conn, $query) && mysqli_query($conn,$query2)) {
+                    echo $query2;
+                    if (mysqli_query($conn, $query) && mysqli_query($conn, $query2)) {
                         // Set response code - 201 Created
                         http_response_code(201);
                         echo json_encode(array("message" => "User was created."));
                     } else {
                         // Set response code - 503 Service Unavailable
                         http_response_code(503);
+                        echo mysqli_error($conn);
                         echo json_encode(array("message" => mysqli_error($conn)));
                     }
                 }
-            } else {
+            }
+            else{
+                http_response_code(404);
+            }
+                }
+                else{
+                    echo "hai";
+                }
+         
+        }else {
                 echo "data is in else condition";
                 print_r($data);
                 // Set response code - 400 Bad Request
@@ -116,23 +131,21 @@ echo $security_guard_id."      ".$name."    ".$age."    ".$address."    ".$servi
     }
 
     case 'DELETE': {
-
+    #    echo "deleted here "; break;
         if (!$conn) {
             die("Connection failed: " . mysqli_connect_error());
 
         } else {
-
+        echo "method name".$_SERVER['REQUEST_METHOD'];
+        $id = $_GET['id'];
             if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
-
-
-                $id = $_GET['id'];
-                echo $id;
-
                 if (!empty($id)) {
-                    $sql = "DELETE FROM `securityguard` WHERE security_guard_id ='$id'";
+                    echo $sql = "DELETE FROM `securityguard` WHERE security_guard_id ='$id'";
+                    $sql1 = "DELETE FROM `users` WHERE user_id ='$id'";
                     $result = mysqli_query($conn, $sql);
+                    $rersult1 = mysqli_query($conn,$sql1);
                     echo $result;
-                    if ($result) {
+                    if ($result && $result1) {
                         if (mysqli_affected_rows($conn) > 0) {
                             http_response_code(200);
                             echo json_encode(array("Message" => "Entry deleted successfully"));
@@ -151,6 +164,8 @@ echo $security_guard_id."      ".$name."    ".$age."    ".$address."    ".$servi
                     echo json_encode(array("Message" => "Data not recieved"));
                 }
 
+            } else {
+                echo mysqli_error($conn);
             }
 
         }
@@ -221,18 +236,18 @@ echo $security_guard_id."      ".$name."    ".$age."    ".$address."    ".$servi
     }
 }
 
-function generatePassword()
-{
-    $length = 6;
-    $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    $password = '';
-    $charsLength = strlen($chars);
+// function generatePassword()
+// {
+//     $length = 6;
+//     $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+//     $password = '';
+//     $charsLength = strlen($chars);
 
-    for ($i = 0; $i < $length; $i++) {
-        $randomChar = $chars[mt_rand(0, $charsLength - 1)];
-        $password .= $randomChar;
-    }
+//     for ($i = 0; $i < $length; $i++) {
+//         $randomChar = $chars[mt_rand(0, $charsLength - 1)];
+//         $password .= $randomChar;
+//     }
 
-    return $password;
-}
+//     return $password;
+// }
 ?>
